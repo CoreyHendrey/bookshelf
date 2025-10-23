@@ -600,6 +600,9 @@ namespace NzbDrone.Core.MetadataSource.BookInfo
         {
             AuthorResource resource = null;
 
+            // Debug log
+            _logger.Info("Polling Author Info {0}",  foreignAuthorId);
+
             for (var i = 0; i < 60; i++)
             {
                 var httpRequest = _requestBuilder.GetRequestBuilder().Create()
@@ -609,10 +612,14 @@ namespace NzbDrone.Core.MetadataSource.BookInfo
                 httpRequest.AllowAutoRedirect = true;
                 httpRequest.SuppressHttpError = true;
 
+                _logger.Info("Sending request: {0}", httpRequest.ToJson());
+
                 var httpResponse = _cachedHttpClient.Get(httpRequest, false, TimeSpan.FromMinutes(30));
 
                 if (httpResponse.HasHttpError)
                 {
+                    _logger.Error("HTTP Error: {0}", httpResponse.ToJson());
+
                     if (httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
                     {
                         WaitUntilRetry(httpResponse);
@@ -633,6 +640,8 @@ namespace NzbDrone.Core.MetadataSource.BookInfo
                 }
 
                 resource = JsonSerializer.Deserialize<AuthorResource>(httpResponse.Content, SerializerSettings);
+
+                _logger.Info("Resource: {0}", httpResponse.Content);
 
                 if (resource.Works != null)
                 {
