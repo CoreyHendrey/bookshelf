@@ -640,8 +640,6 @@ namespace NzbDrone.Core.MetadataSource.BookInfo
                     }
                 }
 
-                _logger.Info("Resource: {0}", httpResponse.Content);
-
                 resource = JsonSerializer.Deserialize<AuthorResource>(httpResponse.Content, SerializerSettings);
 
                 if (resource.Works != null)
