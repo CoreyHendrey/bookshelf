@@ -618,7 +618,8 @@ namespace NzbDrone.Core.MetadataSource.BookInfo
 
                 if (httpResponse.HasHttpError)
                 {
-                    _logger.Error("HTTP Error: {0}", httpResponse.ToJson());
+                    _logger.Error("HTTP Error: {0}", httpResponse.Content);
+                    _logger.Error("HTTP Error Code: {0}", httpResponse.StatusCode);
 
                     if (httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
                     {
