@@ -83,6 +83,8 @@ namespace NzbDrone.Core.MediaFiles
             // If the trackfile wasn't mapped to a track, don't publish an event
             if (bookFile.EditionId > 0)
             {
+                _logger.Debug($"Book Deleted: {bookFile}");
+
                 _eventAggregator.PublishEvent(new BookFileDeletedEvent(bookFile, reason));
             }
         }
@@ -94,6 +96,7 @@ namespace NzbDrone.Core.MediaFiles
             // publish events where trackfile was mapped to a track
             foreach (var bookFile in bookFiles.Where(x => x.EditionId > 0))
             {
+                _logger.Debug($"Book Deleted: {bookFile}");
                 _eventAggregator.PublishEvent(new BookFileDeletedEvent(bookFile, reason));
             }
         }
