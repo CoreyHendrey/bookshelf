@@ -115,7 +115,7 @@ namespace NzbDrone.Core.MediaFiles
             _logger.ProgressInfo("EPUB Fix: Completed. Files fixed: {0}", fixedCount);
         }
 
-        private static List<string> FixEpub(string epubPath)
+        private List<string> FixEpub(string epubPath)
         {
             var fixedProblems = new List<string>();
 
@@ -205,8 +205,15 @@ namespace NzbDrone.Core.MediaFiles
                 }
             }
 
-            File.Delete(epubPath);
-            File.Move(tempFile, epubPath);
+            // Replace original atomically using disk provider semantics
+            if (_diskProvider.FileExists(epubPath))
+            {
+                _diskProvider.MoveFile(tempFile, epubPath, overwrite: true);
+            }
+            else
+            {
+                _diskProvider.MoveFile(tempFile, epubPath, overwrite: false);
+            }
 
             return fixedProblems;
         }

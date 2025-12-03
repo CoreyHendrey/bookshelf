@@ -247,9 +247,15 @@ namespace NzbDrone.Core.MediaFiles
                 }
             }
 
-            // Replace original
-            File.Delete(epubPath);
-            File.Move(tempFile, epubPath);
+            // Replace original atomically using disk provider
+            if (_diskProvider.FileExists(epubPath))
+            {
+                _diskProvider.MoveFile(tempFile, epubPath, overwrite: true);
+            }
+            else
+            {
+                _diskProvider.MoveFile(tempFile, epubPath, overwrite: false);
+            }
 
             return fixedProblems;
         }
