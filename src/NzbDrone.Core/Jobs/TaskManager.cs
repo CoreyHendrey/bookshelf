@@ -120,6 +120,13 @@ namespace NzbDrone.Core.Jobs
                         TypeName = typeof(ImportListSyncCommand).FullName
                     },
 
+                    // Manual task entry for on-demand EPUB fixing (not scheduled)
+                    new ScheduledTask
+                    {
+                        Interval = 0,
+                        TypeName = typeof(NzbDrone.Core.MediaFiles.EpubFixCommand).FullName
+                    },
+
                     new ScheduledTask
                     {
                         Interval = GetRssSyncInterval(),
