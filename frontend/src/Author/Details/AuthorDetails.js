@@ -160,6 +160,22 @@ class AuthorDetails extends Component {
     this.setState({ isMonitorOptionsModalOpen: false });
   };
 
+  onFixEpubPress = async () => {
+    const { id } = this.props;
+    try {
+      await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'EpubFixCommand',
+          authorId: id
+        })
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
+
   onBookEditorTogglePress = () => {
     this.setState({ isEditorActive: !this.state.isEditorActive });
   };
@@ -319,6 +335,13 @@ class AuthorDetails extends Component {
             />
 
             <PageToolbarSeparator />
+
+            <PageToolbarButton
+              label={'Fix EPUBs'}
+              iconName={icons.RETAG}
+              isDisabled={!hasBookFiles}
+              onPress={this.onFixEpubPress}
+            />
 
             <PageToolbarButton
               label={translate('BookMonitoring')}

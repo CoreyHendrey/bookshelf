@@ -151,10 +151,17 @@ namespace NzbDrone.Core.MediaFiles
                 }
             }
 
+            // Skip if already cleaned
+            if (IsAlreadyCleaned(textFiles))
+            {
+                return fixedProblems;
+            }
+
             FixEncoding(textFiles, fixedProblems);
             FixBodyIdLink(textFiles, fixedProblems);
             FixBookLanguage(textFiles, fixedProblems);
             FixStrayImg(textFiles, fixedProblems);
+            MarkCleaned(textFiles, fixedProblems);
 
             if (File.Exists(tempFile))
             {
@@ -202,6 +209,111 @@ namespace NzbDrone.Core.MediaFiles
             File.Move(tempFile, epubPath);
 
             return fixedProblems;
+        }
+
+        private static bool IsAlreadyCleaned(Dictionary<string, string> files)
+        {
+            if (!files.TryGetValue("META-INF/container.xml", out var containerXml))
+            {
+                return false;
+            }
+
+            try
+            {
+                var xdoc = new XmlDocument();
+                xdoc.LoadXml(containerXml);
+                var rootfiles = xdoc.GetElementsByTagName("rootfile");
+                string opfPath = null;
+                foreach (XmlElement rf in rootfiles)
+                {
+                    var mt = rf.GetAttribute("media-type");
+                    if (string.Equals(mt, "application/oebps-package+xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        opfPath = rf.GetAttribute("full-path");
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(opfPath) || !files.ContainsKey(opfPath))
+                {
+                    return false;
+                }
+
+                var opfDoc = new XmlDocument();
+                opfDoc.LoadXml(files[opfPath]);
+                var metaNode = opfDoc.GetElementsByTagName("metadata").Cast<XmlElement>().FirstOrDefault();
+                if (metaNode == null)
+                {
+                    return false;
+                }
+
+                foreach (XmlElement el in metaNode.GetElementsByTagName("meta"))
+                {
+                    var name = el.GetAttribute("name");
+                    var content = el.GetAttribute("content");
+                    if (string.Equals(name, "readarr:cleaned", StringComparison.OrdinalIgnoreCase) && string.Equals(content, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private static void MarkCleaned(Dictionary<string, string> files, List<string> fixedProblems)
+        {
+            if (!files.TryGetValue("META-INF/container.xml", out var containerXml))
+            {
+                return;
+            }
+
+            try
+            {
+                var xdoc = new XmlDocument();
+                xdoc.LoadXml(containerXml);
+                var rootfiles = xdoc.GetElementsByTagName("rootfile");
+                string opfPath = null;
+                foreach (XmlElement rf in rootfiles)
+                {
+                    var mt = rf.GetAttribute("media-type");
+                    if (string.Equals(mt, "application/oebps-package+xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        opfPath = rf.GetAttribute("full-path");
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(opfPath) || !files.ContainsKey(opfPath))
+                {
+                    return;
+                }
+
+                var opfDoc = new XmlDocument();
+                opfDoc.PreserveWhitespace = true;
+                opfDoc.LoadXml(files[opfPath]);
+
+                var metaNode = opfDoc.GetElementsByTagName("metadata").Cast<XmlElement>().FirstOrDefault();
+                if (metaNode == null)
+                {
+                    metaNode = opfDoc.CreateElement("metadata");
+                    opfDoc.DocumentElement?.AppendChild(metaNode);
+                }
+
+                var meta = opfDoc.CreateElement("meta");
+                meta.SetAttribute("name", "readarr:cleaned");
+                meta.SetAttribute("content", "true");
+                metaNode.AppendChild(meta);
+
+                files[opfPath] = opfDoc.OuterXml;
+                fixedProblems.Add("Marked EPUB as cleaned.");
+            }
+            catch
+            {
+            }
         }
 
         private static void FixEncoding(Dictionary<string, string> files, List<string> fixedProblems)
