@@ -117,7 +117,9 @@ namespace NzbDrone.Core.MediaFiles
 
                 // Process EPUB fixes before adding to Calibre
                 TryFixEpub(source);
-                moveFileResult.BookFile = _calibre.AddAndConvert(bookFile, settings);
+
+                // Skip Calibre field updates to avoid overwriting metadata; we only want conversion
+                moveFileResult.BookFile = _calibre.AddAndConvert(bookFile, settings, updateFields: false);
 
                 if (!copyOnly)
                 {

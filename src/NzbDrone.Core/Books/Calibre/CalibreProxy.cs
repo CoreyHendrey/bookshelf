@@ -25,7 +25,7 @@ namespace NzbDrone.Core.Books.Calibre
 {
     public interface ICalibreProxy
     {
-        BookFile AddAndConvert(BookFile file, CalibreSettings settings);
+        BookFile AddAndConvert(BookFile file, CalibreSettings settings, bool updateFields = true);
         void DeleteBook(BookFile book, CalibreSettings settings);
         void DeleteBooks(List<BookFile> books, CalibreSettings settings);
         void RemoveFormats(int calibreId, IEnumerable<string> formats, CalibreSettings settings);
@@ -76,7 +76,7 @@ namespace NzbDrone.Core.Books.Calibre
                 .FirstOrDefault().Value?.Path;
         }
 
-        public BookFile AddAndConvert(BookFile file, CalibreSettings settings)
+        public BookFile AddAndConvert(BookFile file, CalibreSettings settings, bool updateFields = true)
         {
             _logger.Trace($"Importing to calibre: {file.Path} calibre id: {file.CalibreId}");
 
@@ -90,7 +90,11 @@ namespace NzbDrone.Core.Books.Calibre
                 AddFormat(file, settings);
             }
 
-            SetFields(file, settings, true, _configService.EmbedMetadata);
+            // Optionally update calibre-side fields; can be disabled to preserve source metadata
+            if (updateFields)
+            {
+                SetFields(file, settings, true, _configService.EmbedMetadata);
+            }
 
             if (settings.OutputFormat.IsNotNullOrWhiteSpace())
             {
